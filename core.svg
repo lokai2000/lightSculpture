@@ -686,7 +686,7 @@
      inkscape:groupmode="layer"
      id="layer2"
      inkscape:label="Layer 2"
-     style="display:none"
+     style="display:inline"
      transform="translate(0,-2763.7795)">
     <g
        id="g4966-1"
@@ -1304,7 +1304,7 @@
      inkscape:groupmode="layer"
      id="layer3"
      inkscape:label="Layer 3"
-     style="display:none"
+     style="display:inline"
      transform="translate(0,-2763.7795)">
     <g
        id="g4966-10"
@@ -1922,7 +1922,7 @@
      inkscape:groupmode="layer"
      id="layer4"
      inkscape:label="Layer 4"
-     style="display:none"
+     style="display:inline"
      transform="translate(0,-2763.7795)">
     <g
        id="g4966-7"
@@ -2540,7 +2540,7 @@
      inkscape:groupmode="layer"
      id="layer5"
      inkscape:label="Layer 5"
-     style="display:none"
+     style="display:inline"
      transform="translate(0,-2763.7795)">
     <g
        id="g4966-3"
@@ -3158,7 +3158,7 @@
      inkscape:groupmode="layer"
      id="layer6"
      inkscape:label="Layer 6"
-     style="display:none"
+     style="display:inline"
      transform="translate(0,-2763.7795)">
     <g
        id="g4966-9"
@@ -3776,7 +3776,7 @@
      inkscape:groupmode="layer"
      id="layer7"
      inkscape:label="Layer 7"
-     style="display:none"
+     style="display:inline"
      transform="translate(0,-2763.7795)">
     <g
        id="g4966-5"
@@ -4394,7 +4394,7 @@
      inkscape:groupmode="layer"
      id="layer8"
      inkscape:label="Layer 8"
-     style="display:none;opacity:0.98999999;filter:url(#filter7172)"
+     style="display:inline;opacity:0.98999999;filter:url(#filter7172)"
      transform="translate(0,-2763.7795)">
     <g
        id="g4966-100"
