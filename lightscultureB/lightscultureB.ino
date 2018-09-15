@@ -4,7 +4,9 @@
 #endif
 
 #define PIN        4
-#define NUM_LEDS   64
+#define XSIZE      8
+#define YSIZE      8
+#define NUM_LEDS   (XSIZE*YSIZE)
 #define BRIGHTNESS 100
 
 Adafruit_NeoPixel strip = Adafruit_NeoPixel(NUM_LEDS, PIN, NEO_GRB + NEO_KHZ800);
@@ -20,7 +22,7 @@ void setup() {
 
   strip.setBrightness(BRIGHTNESS);
   strip.begin();
-  strip.show(); // Initialize all pixels to 'off'
+  strip.show(); 
   interpRotate(random(512,2048),random(25));
 }
 
@@ -41,30 +43,27 @@ void loop() {
 
   for ( byte j=0; j<cycs; j++ ){
     scale = j/((cycs-1)*1.0);
-    for ( byte k=0; k<8; k++ ){
-      RA=Rarray[(barA+k)%8];
-      GA=Garray[(barA+k)%8];
-      BA=Barray[(barA+k)%8];
-      RB=Rarray[(barA+k+1)%8];
-      GB=Garray[(barA+k+1)%8];
-      BB=Barray[(barA+k+1)%8];
-        for( byte i=0; i<8; i++ ) {
-            strip.setPixelColor(i+k*8, strip.Color( (mscale*(RB*(scale)+RA*(1.0-scale))), (mscale*(GB*(scale)+GA*(1.0-scale))), (mscale*(BB*(scale)+BA*(1.0-scale))) ));      
+    for ( byte k=0; k<YSIZE; k++ ){
+      RA=Rarray[(barA+k)%YSIZE];
+      GA=Garray[(barA+k)%YSIZE];
+      BA=Barray[(barA+k)%YSIZE];
+      RB=Rarray[(barA+k+1)%YSIZE];
+      GB=Garray[(barA+k+1)%YSIZE];
+      BB=Barray[(barA+k+1)%YSIZE];
+        for( byte i=0; i<XSIZE; i++ ) {
+            strip.setPixelColor(i+k*XSIZE, strip.Color( (mscale*(RB*(scale)+RA*(1.0-scale))), (mscale*(GB*(scale)+GA*(1.0-scale))), (mscale*(BB*(scale)+BA*(1.0-scale))) ));      
         }
     }
     strip.show();
     delay(dd);
   }
 
-
-  if ((7==barA)){
+  if (((YSIZE-1)==barA)){
     barA= -1;
   }
 
-
   barA     += 1;
   cycleCnt += 1;
-
 
   //State machine
   //-----------------------------------
@@ -148,6 +147,9 @@ void loop() {
 //Animation Functions
 // ---------------------------------------------------------------------
 
+//-------------------------------------------------------
+//-------------------------------------------------------
+//-------------------------------------------------------
 void makeColorA(byte *RR, byte *GG, byte *BB){
   byte  R,G,B;
   short summ;
@@ -173,6 +175,9 @@ void makeColorA(byte *RR, byte *GG, byte *BB){
 }
 
 
+//-------------------------------------------------------
+//-------------------------------------------------------
+//-------------------------------------------------------
 void makeColorB(byte *RR, byte *GG, byte *BB){
   byte  R,G,B,mn,mx;
   short summ;
@@ -200,6 +205,9 @@ void makeColorB(byte *RR, byte *GG, byte *BB){
 }
 
 
+//-------------------------------------------------------
+//-------------------------------------------------------
+//-------------------------------------------------------
 void setColorArray(){
   
   byte  R,G,B;
@@ -207,8 +215,8 @@ void setColorArray(){
   float scale;
   byte  lim;
   
-  lim = random()%6+2;
-  for (byte i=0;i<8;i++){
+  lim = random()%(YSIZE-2)+2;
+  for (byte i=0;i<YSIZE;i++){
     makeColorA(&R,&G,&B);
     if (i<lim){
       scale = ((lim-1.0)-i)/(lim-1.0);
@@ -225,42 +233,63 @@ void setColorArray(){
   
 }
 
+
+//-------------------------------------------------------
+//-------------------------------------------------------
+//-------------------------------------------------------
 void circles(short runs, short wait){
-  byte xo,yo;
+  byte  Rdisp[64];
+  byte  Gdisp[64];
+  byte  Bdisp[64];
+
+  byte  xo,yo;
   float x,y;
   float cvt=3.14/180.0;
   short xi,yi;
-  byte R,G,B;
+  byte  R,G,B;
   float scale;
 
-
+  memset(Rdisp,0,NUM_LEDS);
+  memset(Gdisp,0,NUM_LEDS);
+  memset(Bdisp,0,NUM_LEDS);
+  
   for (short l=0; l<runs; l++){
-    xo = random()%8;
-    yo = random()%8;
-    for (byte k=0; k<6; k++){
+    xo = random()%XSIZE;
+    yo = random()%YSIZE;
+    for (byte k=0; k<(0.75*YSIZE); k++){
       makeColorB(&R,&G,&B);
       for (byte cyc=0; cyc<8;cyc++){
         scale = cyc/7.0;
         for (short ang=0;ang<360;ang++){
           x = cos(ang*cvt)*k*1.5 + xo;
           y = sin(ang*cvt)*k*1.5 + yo;
-          xi = (int(x)%8);
-          yi = (int(y)%8);
-          if (xi<0) xi+=8;
-          if (yi<0) yi+=8;
-          strip.setPixelColor(xi+yi*8, strip.Color(R*scale,G*scale,B*scale) );        
+          xi = (int(x)%XSIZE);
+          yi = (int(y)%YSIZE);
+          if (xi<0) xi+=XSIZE;
+          if (yi<0) yi+=YSIZE;
+          Rdisp[xi+yi*8] = max(Rdisp[xi+yi*XSIZE],R*scale);
+          Gdisp[xi+yi*8] = max(Gdisp[xi+yi*XSIZE],G*scale);
+          Bdisp[xi+yi*8] = max(Bdisp[xi+yi*XSIZE],B*scale);
+        }
+        for (byte i=0; i<NUM_LEDS; i++){
+          strip.setPixelColor(i, strip.Color(Rdisp[i],Gdisp[i],Bdisp[i]) );              
         }
         strip.show();
         delay(wait);      
       }
     }
-    for (byte i=0; i<64; i++){
-      strip.setPixelColor(i, strip.Color(0,0,0) );              
-    }
-    strip.show();
+
+    memset(Rdisp,0,NUM_LEDS);
+    memset(Gdisp,0,NUM_LEDS);
+    memset(Bdisp,0,NUM_LEDS);
+    
   }
 }
 
+
+//-------------------------------------------------------
+//-------------------------------------------------------
+//-------------------------------------------------------
 void randomizer(short wait){
   for(short j=0;j<30;j++){
     for(byte i=0; i<strip.numPixels(); i++) {
@@ -272,6 +301,9 @@ void randomizer(short wait){
 }
 
 
+//-------------------------------------------------------
+//-------------------------------------------------------
+//-------------------------------------------------------
 void pointFade(short count, short wait){
 
   byte  Rdisp[NUM_LEDS];
@@ -312,42 +344,45 @@ void pointFade(short count, short wait){
 }
 
 
+//-------------------------------------------------------
+//-------------------------------------------------------
+//-------------------------------------------------------
 void scan(short count, short wait){
 
-  byte  Rdisp[64];
-  byte  Gdisp[64];
-  byte  Bdisp[64];
+  byte  Rdisp[NUM_LEDS];
+  byte  Gdisp[NUM_LEDS];
+  byte  Bdisp[NUM_LEDS];
   byte  R,G,B;
   short summ;
   float scale;
   float fade;
   
-  signed char x = random()%8;
+  signed char x = random()%XSIZE;
   byte        xdir = random()%2;
 
   fade = 0.5 + random(36)/100.0;
 
-  memset(Rdisp,0,64);
-  memset(Gdisp,0,64);
-  memset(Bdisp,0,64);
+  memset(Rdisp,0,NUM_LEDS);
+  memset(Gdisp,0,NUM_LEDS);
+  memset(Bdisp,0,NUM_LEDS);
 
   makeColorB(&R,&G,&B);
 
   for ( short k=0; k<count; k++ ){
-    for ( byte i=0; i<64; i++ ){
+    for ( byte i=0; i<NUM_LEDS; i++ ){
       Rdisp[i] = fade*Rdisp[i];
       Gdisp[i] = fade*Gdisp[i];
       Bdisp[i] = fade*Bdisp[i];
     }
 
-    for ( byte j=0; j<8; j++ ){
-      Rdisp[j*8+x] = R;
-      Gdisp[j*8+x] = G;
-      Bdisp[j*8+x] = B;      
+    for ( byte j=0; j<YSIZE; j++ ){
+      Rdisp[j*XSIZE+x] = R;
+      Gdisp[j*XSIZE+x] = G;
+      Bdisp[j*XSIZE+x] = B;      
     }
 
     if (xdir){
-      if (7==x){
+      if ((XSIZE-1)==x){
         xdir =  0;
         x    -= 1;
       } else {
@@ -373,48 +408,51 @@ void scan(short count, short wait){
 }
 
 
+//-------------------------------------------------------
+//-------------------------------------------------------
+//-------------------------------------------------------
 void scanTwo(short count, short wait){
 
-  byte  Rdisp[64];
-  byte  Gdisp[64];
-  byte  Bdisp[64];
+  byte  Rdisp[NUM_LEDS];
+  byte  Gdisp[NUM_LEDS];
+  byte  Bdisp[NUM_LEDS];
   byte  R,G,B;
   short summ;
   float scale;
   float fade;
   
-  signed char x = random()%8;
+  signed char x = random()%XSIZE;
   byte        xdir = random()%2;
 
   fade = 0.5 + random(36)/100.0;
 
-  memset(Rdisp,0,64);
-  memset(Gdisp,0,64);
-  memset(Bdisp,0,64);
+  memset(Rdisp,0,NUM_LEDS);
+  memset(Gdisp,0,NUM_LEDS);
+  memset(Bdisp,0,NUM_LEDS);
 
   makeColorB(&R,&G,&B);
 
   for ( short k=0; k<count; k++ ){
-    for ( byte i=0; i<64; i++ ){
+    for ( byte i=0; i<NUM_LEDS; i++ ){
       Rdisp[i] = fade*Rdisp[i];
       Gdisp[i] = fade*Gdisp[i];
       Bdisp[i] = fade*Bdisp[i];
     }
 
-    for ( byte j=0; j<8; j++ ){
-      Rdisp[j*8+x] = R;
-      Gdisp[j*8+x] = G;
-      Bdisp[j*8+x] = B;      
+    for ( byte j=0; j<YSIZE; j++ ){
+      Rdisp[j*XSIZE+x] = R;
+      Gdisp[j*XSIZE+x] = G;
+      Bdisp[j*XSIZE+x] = B;      
     }
 
-    for ( byte j=0; j<8; j++ ){
-      Rdisp[x*8+j] = B;
-      Gdisp[x*8+j] = G;
-      Bdisp[x*8+j] = R;      
+    for ( byte j=0; j<YSIZE; j++ ){
+      Rdisp[x*XSIZE+j] = B;
+      Gdisp[x*XSIZE+j] = G;
+      Bdisp[x*XSIZE+j] = R;      
     }
 
     if (xdir){
-      if (7==x){
+      if ((XSIZE-1)==x){
         xdir =  0;
         x    -= 1;
       } else {
@@ -440,6 +478,9 @@ void scanTwo(short count, short wait){
 }
 
 
+//-------------------------------------------------------
+//-------------------------------------------------------
+//-------------------------------------------------------
 void interpCycle(short count, short wait){
   byte  R[4],G[4],B[4];
   byte  Rp,Gp,Bp;
@@ -452,11 +493,11 @@ void interpCycle(short count, short wait){
   }
 
   for (short cyc=0; cyc<count; cyc+=4){
-    for ( byte j=0; j<8; j++){
-      y  = j/8.0;
+    for ( byte j=0; j<YSIZE; j++){
+      y  = j/(1.0*YSIZE);
       dy = 1.0-y;
-      for ( byte i=0; i<8; i++){
-        x  = i/8.0;
+      for ( byte i=0; i<XSIZE; i++){
+        x  = i/(1.0*XSIZE);
         dx = 1.0-x;
         Rp = R[0]*dx*dy + R[1]*x*dy + R[2]*dx*y + R[3]*x*y;
         Gp = G[0]*dx*dy + G[1]*x*dy + G[2]*dx*y + G[3]*x*y;
@@ -464,7 +505,7 @@ void interpCycle(short count, short wait){
         Rp = (Rp+cyc)%256;
         Gp = (Gp+cyc)%256;
         Bp = (Bp+cyc)%256;
-        strip.setPixelColor(j*8+i, strip.Color(Rp,Gp,Bp));
+        strip.setPixelColor(j*XSIZE+i, strip.Color(Rp,Gp,Bp));
       }
     }
     strip.show();
@@ -474,7 +515,9 @@ void interpCycle(short count, short wait){
 }
 
 
-
+//-------------------------------------------------------
+//-------------------------------------------------------
+//-------------------------------------------------------
 void interpRotate(short count, short wait){
   byte  R[4],G[4],B[4];
   byte  Ro[4],Go[4],Bo[4];
@@ -517,11 +560,11 @@ void interpRotate(short count, short wait){
   }
 
   for (short cyc=0; cyc<count; cyc+=4){
-    for ( byte j=0; j<8; j++){
-      y  = j/8.0;
+    for ( byte j=0; j<YSIZE; j++){
+      y  = j/(1.0*YSIZE);
       dy = 1.0-y;
-      for ( byte i=0; i<8; i++){
-        x  = i/8.0;
+      for ( byte i=0; i<XSIZE; i++){
+        x  = i/(1.0*XSIZE);
         dx = 1.0-x;
         Rp = R[0]*dx*dy + R[1]*x*dy + R[2]*dx*y + R[3]*x*y;
         Gp = G[0]*dx*dy + G[1]*x*dy + G[2]*dx*y + G[3]*x*y;
@@ -548,42 +591,45 @@ void interpRotate(short count, short wait){
 }
 
 
+//-------------------------------------------------------
+//-------------------------------------------------------
+//-------------------------------------------------------
 void bounce(short count, short wait){
 
-  byte  Rdisp[64];
-  byte  Gdisp[64];
-  byte  Bdisp[64];
+  byte  Rdisp[NUM_LEDS];
+  byte  Gdisp[NUM_LEDS];
+  byte  Bdisp[NUM_LEDS];
   byte  R,G,B;
   short summ;
   float scale;
   float fade;
   
-  signed char x = random()%8;
-  signed char y = random()%8;
+  signed char x = random()%XSIZE;
+  signed char y = random()%YSIZE;
   byte        xdir = random()%2;
   byte        ydir = random()%2;
 
   fade = 0.5 + random(46)/100.0;
 
-  memset(Rdisp,0,64);
-  memset(Gdisp,0,64);
-  memset(Bdisp,0,64);
+  memset(Rdisp,0,NUM_LEDS);
+  memset(Gdisp,0,NUM_LEDS);
+  memset(Bdisp,0,NUM_LEDS);
 
   makeColorB(&R,&G,&B);
 
   for ( short k=0; k<count; k++ ){
-    for ( byte i=0; i<64; i++ ){
+    for ( byte i=0; i<NUM_LEDS; i++ ){
       Rdisp[i] = fade*Rdisp[i];
       Gdisp[i] = fade*Gdisp[i];
       Bdisp[i] = fade*Bdisp[i];
     }
         
-    Rdisp[y*8+x] = R;
-    Gdisp[y*8+x] = G;
-    Bdisp[y*8+x] = B;
+    Rdisp[y*XSIZE+x] = R;
+    Gdisp[y*XSIZE+x] = G;
+    Bdisp[y*XSIZE+x] = B;
 
     if (xdir){
-      if (7==x){
+      if ((XSIZE-1)==x){
         xdir =  0;
         x    -= 1;
       } else {
@@ -599,7 +645,7 @@ void bounce(short count, short wait){
     }
 
     if (ydir){
-      if (7==y){
+      if ((YSIZE-1)==y){
         ydir =  0;
         y    -= 1;
       } else {
@@ -625,51 +671,54 @@ void bounce(short count, short wait){
 }
 
 
+//-------------------------------------------------------
+//-------------------------------------------------------
+//-------------------------------------------------------
 void dblBounce(short count, short wait){
 
-  byte  Rdisp[64];
-  byte  Gdisp[64];
-  byte  Bdisp[64];
+  byte  Rdisp[NUM_LEDS];
+  byte  Gdisp[NUM_LEDS];
+  byte  Bdisp[NUM_LEDS];
   byte  R,G,B;
   short summ;
   float scale;
   float fade;
   
-  signed char x = random()%8;
-  signed char y = random()%8;
+  signed char x = random()%XSIZE;
+  signed char y = random()%XSIZE;
   byte        xdir = random()%2;
   byte        ydir = random()%2;
 
-  signed char xa = random()%8;
-  signed char ya = random()%8;
+  signed char xa = random()%XSIZE;
+  signed char ya = random()%YSIZE;
   byte        xadir = random()%2;
   byte        yadir = random()%2;
 
   fade = 0.5 + random(46)/100.0;
 
-  memset(Rdisp,0,64);
-  memset(Gdisp,0,64);
-  memset(Bdisp,0,64);
+  memset(Rdisp,0,NUM_LEDS);
+  memset(Gdisp,0,NUM_LEDS);
+  memset(Bdisp,0,NUM_LEDS);
 
   makeColorB(&R,&G,&B);
 
   for ( short k=0; k<count; k++ ){
-    for ( byte i=0; i<64; i++ ){
+    for ( byte i=0; i<NUM_LEDS; i++ ){
       Rdisp[i] = fade*Rdisp[i];
       Gdisp[i] = fade*Gdisp[i];
       Bdisp[i] = fade*Bdisp[i];
     }
         
-    Rdisp[y*8+x] = R;
-    Gdisp[y*8+x] = G;
-    Bdisp[y*8+x] = B;
+    Rdisp[y*XSIZE+x] = R;
+    Gdisp[y*XSIZE+x] = G;
+    Bdisp[y*XSIZE+x] = B;
 
-    Rdisp[ya*8+xa] = B;
-    Gdisp[ya*8+xa] = G;
-    Bdisp[ya*8+xa] = R;
+    Rdisp[ya*XSIZE+xa] = B;
+    Gdisp[ya*XSIZE+xa] = G;
+    Bdisp[ya*XSIZE+xa] = R;
 
     if (xdir){
-      if (7==x){
+      if ((XSIZE-1)==x){
         xdir =  0;
         x    -= 1;
       } else {
@@ -685,7 +734,7 @@ void dblBounce(short count, short wait){
     }
 
     if (ydir){
-      if (7==y){
+      if ((YSIZE-1)==y){
         ydir =  0;
         y    -= 1;
       } else {
@@ -701,7 +750,7 @@ void dblBounce(short count, short wait){
     }
 
     if (xadir){
-      if (7==xa){
+      if ((XSIZE-1)==xa){
         xadir =  0;
         xa    -= 1;
       } else {
@@ -717,7 +766,7 @@ void dblBounce(short count, short wait){
     }
 
     if (yadir){
-      if (7==ya){
+      if ((YSIZE-1)==ya){
         yadir =  0;
         ya    -= 1;
       } else {
